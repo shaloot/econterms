@@ -21,7 +21,7 @@ encoding: utf-8
 title: "Data Terms & Concepts"
 description: "Datapedia: Your Ultimate Hub for Consolidated Data Terms and Concepts"
 # baseurl: # the subpath of your site, e.g. "/blog"
-baseurl: /dataterms
+baseurl: /
 url: "https://dataterms.techfunhouse.com"
 logo: "/assets/images/Influencers.png"
 linkedin_title: "LinkedIn"
