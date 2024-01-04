@@ -1,0 +1,67 @@
+{%- assign lang = site.locale | slice: 0,2 | default: "en" -%}
+  <script src="{{ '/assets/js/lunr/lunr.min.js' | relative_url }}"></script>
+  <script src="{{ '/assets/js/search-data.js' | relative_url }}"></script>
+  {%- unless lang == "en" -%}
+    <script src="{{ '/assets/js/lunr/lunr.stemmer.support.min.js' | relative_url }}"></script>
+    <script src="{{ '/assets/js/lunr/lunr.' | append: lang | append: '.min.js' | relative_url }}"></script>
+  {%- endunless %}
+  <script>
+    var idx = lunr(function () {
+      this.field('title', { boost: 10 })
+      this.field('about', { boost: 10 })
+      this.ref('id')
+
+      this.pipeline.remove(lunr.trimmer)
+
+      // add documents to index
+      for (var item in store) {
+        this.add({
+          title: store[item].title,
+          about: store[item].about,
+          id: item
+        })
+      }
+    });
+
+    $(document).ready(function () {
+      $('input#search').on('keyup', function () {
+        var resultdiv = $('#results');
+        var query = $(this).val().toLowerCase();
+        var result =
+          idx.query(function (q) {
+            query.split(lunr.tokenizer.separator).forEach(function (term) {
+              q.term(term, { boost: 100 })
+              if (query.lastIndexOf(" ") != query.length - 1) {
+                q.term(term, { usePipeline: false, wildcard: lunr.Query.wildcard.TRAILING, boost: 10 })
+              }
+              q.term(term, { usePipeline: false, wildcard: lunr.Query.wildcard.LEADING, boost: 5 })
+              if (term != "") {
+                q.term(term, { usePipeline: false, editDistance: 1, boost: 1 })
+              }
+            })
+          });
+        resultdiv.empty();
+        resultdiv.prepend('<p class="results__found">' + result.length + ' {{ site.data.text[site.locale].results_found | default: "Result(s) found" }}</p>');
+        for (var item in result) {
+          var ref = result[item].ref;
+          var searchitem =
+            '<article class="entry">' +
+              '<h3 class="entry-title">' +
+                '<a href="' + store[ref].url + '">';
+                searchitem = searchitem + ' ' + store[ref].title + '</a>' +
+              '</h3>' +
+              '<div class="entry-excerpt">' +
+                '<p>' + 
+                  store[ref].about.split(" ")
+                    .splice(0, 90).join(" ")
+                    .replace(/&newline;/g, ' ')
+                    .replace(/&colon;/g, ':')
+                    .replace(/&hash;/g, '#')
+                + '...</p>' +
+              '</div>'+
+            '</article>';
+          resultdiv.append(searchitem);
+        }
+      });
+    });
+  </script>

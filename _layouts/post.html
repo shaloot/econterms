@@ -1,0 +1,40 @@
+---
+layout: default
+---
+{%- assign min = 1 -%}
+{%- assign max = 12 -%}
+{%- assign diff = max | minus: min -%}
+{%- assign random_number = "now" | date: "%N" | modulo: diff | plus: min -%}
+
+<main id="main" class="main-content" aria-label="Content">
+  <article class="h-entry">
+    <div class="page-wrapper">
+      <header class="page-header">
+        {% assign title = page.title | markdownify | trim | strip_html %}
+        <h1 id="page-title" class="page-title p-name">
+          <img src="/assets/images/yoga{{ random_number }}.svg" class="social-logo-img animated fadeInDown">
+          {{ title }}
+        </h1>
+      </header>
+      <div class="page-content">
+        {% include page-pagination.html %}
+        <p class="e-about">
+          {{ page.about | split: '&colon;' | join: ':' | split: '&hash;' | join: '#' | split: '&newline;' | join: '<br />' | split: '<br />' | join: '<br /><br />' | normalize_whitespace | markdownify}}
+        </p>
+
+        <hr class="solid">
+
+        <div class="e-content">
+          {{ content }}
+
+          {% include page-references.html %}
+
+        </div>
+
+        {% include page-pagination.html %}
+      </div>
+    </div>
+  </article>
+</main>
+
+

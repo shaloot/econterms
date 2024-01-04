@@ -1,0 +1,7 @@
+# Sample site navigation bar links
+- title: About
+  url: /about
+- title: Data Terms
+  url: /dataterms
+- title: Search
+  url: /search

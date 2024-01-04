@@ -1,0 +1,12 @@
+{% if page.author %}
+  <h3 class="page-taxonomies-title">{{ site.data.text[site.locale].contributor | default: 'Contributor' }}</h3>
+  <ul class="page-taxonomies">
+    <li class="page-taxonomy">
+      {% if page.authorurl %}
+        <a href="{{ page.authorurl }}" rel="contributor" target="_blank">{{ page.author }}</a>
+      {% else %}
+        {{ page.author }}
+      {% endif %}
+    </li>
+  </ul>
+{% endif %}

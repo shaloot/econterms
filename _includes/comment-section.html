@@ -1,0 +1,791 @@
+{%- assign chunked_loading_enabled = true -%}
+{%- if page.chunked_comment_loading == false -%}
+	{%- assign chunked_loading_enabled = false -%}
+{%- else -%}
+	{%- if site.google_forms_comments.chunked_comment_loading == false and page.chunked_comment_loading != true -%}
+		{%- assign chunked_loading_enabled = false -%}
+	{%- endif -%}
+{%- endif -%}
+
+{%- assign lazy_load_enabled = false -%}
+{%- if page.lazy_load_comments == true -%}
+	{%- assign lazy_load_enabled = true -%}
+{%- elsif site.google_forms_comments.lazy_load_comments == true -%}
+	{%- unless page.lazy_load_comments == false -%}
+		{%- assign lazy_load_enabled = true -%}
+	{%- endunless -%}
+{%- endif -%}
+
+{%- assign recaptcha_enabled = true -%}
+
+{%- assign comment_replies_enabled = false -%}
+{%- if site.google_forms_comments.comment_replies_enabled == true -%}
+	{%- assign comment_replies_enabled = true -%}
+{%- endif -%}
+
+
+<script>
+	function setText(elementId, textContent) {
+		document.getElementById(elementId).textContent = textContent;
+	};
+
+	function show(elementId) {
+		document.getElementById(elementId).style.display = 'inline';
+	};
+
+	function hide(elementId) {
+		document.getElementById(elementId).style.display = 'none';
+	};
+
+	function getValue(elementId) {
+		return document.getElementById(elementId).value;
+	};
+
+	function setValue(elementId, value) {
+		return document.getElementById(elementId).value = value;
+	};
+
+	function fadeIn(element) {
+		var duration = 400;
+		element.style.opacity = 0;
+		let opacity = 0;
+		const timer = setInterval(function() {
+		  opacity += 50 / duration;
+		  if (opacity >= 1) {
+		    clearInterval(timer);
+		    opacity = 1;
+		  }
+		  element.style.opacity = opacity;
+		}, 50);
+	};
+
+	function disableButtonWithLoader(elementId) {
+		var buttonToDisable = document.getElementById(elementId);
+		if (buttonToDisable == null) {
+			return;
+		}
+		buttonToDisable.disabled = true;
+		setText(elementId, "\xa0");
+	}
+
+	function disablePostCommentButton() {
+		disableButtonWithLoader("comment-submit");
+	};
+
+	function enablePostCommentButton() {
+		var postCommentButton = document.getElementById("comment-submit");
+		postCommentButton.disabled = false;
+		setText("comment-submit", "Post");
+	};
+
+	async function initialCommentLoad() {
+		disableButtonWithLoader("load-comment-button");
+		
+		var loadRecaptcha = document.createElement("script");
+		loadRecaptcha.src = "https://www.google.com/recaptcha/api.js?render={{ site.google_forms_comments.recaptcha_site_key }}";
+		document.head.appendChild(loadRecaptcha);
+
+    var loadValidator = document.createElement("script");
+		loadValidator.src = "https://cdnjs.cloudflare.com/ajax/libs/validator/13.9.0/validator.min.js";
+		document.head.appendChild(loadValidator);
+
+		await loadRecaptcha.onload;
+		await loadValidator.onload;
+
+		reloadComments();
+	};
+
+	var thisPageUrl = "{{ page.url }}";
+	const EXTRA_INFO_START = "::RePlY::";
+	const EXTRA_INFO_END = "::RePlY::";
+
+	var replyComments = [];
+	var visibleComments = [];
+	var hiddenComments = [];
+	var netNewComments = [];
+	{%- if comment_replies_enabled -%}
+	var commentIds = new Set();
+	{%- endif -%}
+
+	function formatDate(stringDate) {
+		var date = new Date(stringDate);
+		var dateOptions = { year: 'numeric', month: 'long', day: 'numeric'};
+		var timeOptions = { hour: 'numeric', minute: 'numeric' };
+		return `${date.toLocaleDateString("en-us", dateOptions)} at ${date.toLocaleTimeString("en-us", timeOptions)}`;
+	};
+
+  function displayReplyComments(replies) {
+    var remaining = [];
+    replies.forEach(element => {
+      var ret = addAsReplyToComment(element.replyId, element.item);
+      if (!ret) 
+        remaining.push(element);
+    });
+    
+    return remaining;
+  }
+	async function displayComments(comments) {
+		show("comments-and-input");
+		hide("load-comments");
+		var hasVisibleComments = visibleComments.length > 0;
+
+		if (comments == null || comments === "" || comments == []) {
+			if (!hasVisibleComments) {
+				show("no-comments");
+				hide("load-more-comments");
+				hide("num-comments-displayed");
+			}
+			return;
+		}
+
+		{%- if comment_replies_enabled -%}
+		commentIds = new Set();
+		{%- endif -%}
+
+		var newHiddenComments = comments
+			{%- if comment_replies_enabled -%}
+			.map(item => {
+				commentIds.add(Date.parse(item.timestamp)?.toString());
+				return item;
+			})
+			{%- endif -%}
+			.sort((a, b) => (new Date(a.timestamp).getTime() || 0) - (new Date(b.timestamp).getTime() || 0))
+			.map(item => JSON.stringify(item));
+
+    if (hasVisibleComments) {
+			netNewComments = newHiddenComments
+				.filter(item => !visibleComments.includes(item))
+				.filter(item => !hiddenComments.includes(item));
+		}
+
+		hiddenComments = newHiddenComments
+			.filter(item => !visibleComments.includes(item))
+			.filter(item => !netNewComments.includes(item));
+
+		loadMoreComments(false || !hasVisibleComments);
+    if (replyComments.length > 0) {
+      do {
+        replyComments = displayReplyComments(replyComments);
+      } while (replyComments.length > 0);
+    }
+	};
+
+	function loadMoreComments(isLoadMoreAction) {
+		{%- if chunked_loading_enabled  -%}
+			var newCommentsToDisplay = hiddenComments.slice(-5);
+		{%- else -%}
+			var newCommentsToDisplay = hiddenComments;
+		{%- endif -%}
+
+		if (isLoadMoreAction) {
+			newCommentsToDisplay.reverse().forEach(element => displaySingleComment(element, true));
+			hiddenComments = hiddenComments.filter(item => !newCommentsToDisplay.includes(item) && !visibleComments.includes(item));
+		} else {
+			netNewComments.forEach(element => displaySingleComment(element, false));
+			netNewComments = []
+		}
+
+		setText("num-comments-displayed", `Showing ${visibleComments.length} of ${visibleComments.length + hiddenComments.length} comments`);
+
+		if (hiddenComments.length == 0) {
+			hide("load-more-comments");
+		} else {
+			show("load-more-comments");
+		}
+	};
+
+	{%- if comment_replies_enabled -%}
+	var currentFadeItem = null;
+
+	function fadeColor(element) {
+		if (currentFadeItem != null) {
+			clearInterval(currentFadeItem);
+			currentFadeItem = null;
+		}
+
+		var duration = 1000;
+		var step = 25;
+		let opacity = 1;
+		const timer = setInterval(function() {
+		  opacity -= (1 / (duration / step));
+		  if (opacity <= 0) {
+		    clearInterval(timer);
+		    currentFadeItem = null;
+		    opacity = 0;
+		  }
+		  element.style.background = "rgba(3, 155, 229, "+ opacity +")";
+		}, step);
+		currentFadeItem = timer;
+	};
+
+	function smoothScrollTo(element) {
+		element.scrollIntoView({
+		  behavior: "smooth",
+		  block: "start",
+		  inline: "nearest"
+		});
+	};
+
+  function addAsReplyToComment(commentId, item) {
+		var element = document.getElementsByClassName("" + commentId)[0];
+		while(element == null && hiddenComments.length > 0) {
+			loadMoreComments(true);
+			element = document.getElementsByClassName("" + commentId)[0];
+		}
+    if (element != null) {
+      element.appendChild(item);
+      return true;
+    }
+
+    return false;
+	};
+
+
+	function jumpToComment(commentId) {
+		var element = document.getElementsByClassName("" + commentId)[0];
+		while(element == null && hiddenComments.length > 0) {
+			loadMoreComments(true);
+			element = document.getElementsByClassName("" + commentId)[0];
+		}
+		if (element != null) {
+			smoothScrollTo(element);
+			fadeColor(element);
+		}
+	};
+
+	function clearCommentReplyItem() {
+		document.getElementById("comment-reply-info").innerHTML = ``;
+	};
+
+	function replyToComment(commentId) {
+		document.getElementById("comment-reply-info").innerHTML = `<small class="comment-reply-clear" onclick="clearCommentReplyItem()">Ⓧ&nbsp;&nbsp;&nbsp;</small><small onClick="jumpToComment('${commentId}')">Replying to comment <a id="reply-to-comment-id">${commentId}</a></small>`;
+		smoothScrollTo(document.getElementsByClassName("comments-form")[0]);
+	};
+	{%- endif -%}
+
+	function getCommentInfo(comment) {
+		var extraCommentInfo = comment?.match(EXTRA_INFO_START + ".+" + EXTRA_INFO_END);
+		return {
+			text : comment?.replace(extraCommentInfo, ""),
+			extraCommentInfo : JSON.parse(extraCommentInfo?.toString()?.replace(EXTRA_INFO_START, "")?.replace(EXTRA_INFO_END, "") ?? "{}")
+		};
+	};
+
+	function displaySingleComment(element, isPrepend) {
+		if (visibleComments.includes(element)) {
+			return;
+		}
+
+		var jsonElement = JSON.parse(element);
+		var comment = getCommentInfo(jsonElement.comment?.toString());
+		var verifiedAuthorTag = "";
+		if (jsonElement.isAuthor == true || jsonElement.isAuthor === "TRUE") {
+			verifiedAuthorTag = "&nbsp;<strong>(Author)</strong>";
+		}
+		var newItem = document.createElement("div");
+		{%- if comment_replies_enabled -%}
+		var rId = comment?.extraCommentInfo?.replyToCommentId;
+		if (rId != null && rId != "" && commentIds.has(rId)) 
+      newItem.classList.add("comment-item");
+    else
+      newItem.classList.add("comment-root-item");
+    {%- else -%}
+    newItem.classList.add("comment-root-item");
+    {%- endif -%}
+
+		{%- if comment_replies_enabled -%}
+		newItem.classList.add("reply-item");
+		var commentReplyId = "" + Date.parse(jsonElement.timestamp);
+		newItem.classList.add(commentReplyId);
+		var replyToHtml = null;
+		var replyId = comment?.extraCommentInfo?.replyToCommentId;
+		// if (replyId != null && replyId != "" && commentIds.has(replyId)) {
+		// 	replyToHtml = `<p class="comemnt-reply-id" onclick="jumpToComment('${replyId}')"><<< ${replyId}</p>`;
+		// }
+		var currentCommentReplyButton = `<span class="comment-reply-button" onclick="replyToComment(${commentReplyId})"><img></img>Reply</span>`;
+		{%- endif -%}
+
+		newItem.innerHTML = `
+			<p class="commenter-name">${validator.escape(jsonElement.name.toString())}${verifiedAuthorTag}
+				<small>${formatDate(jsonElement.timestamp)}
+				{%- if comment_replies_enabled -%}
+				${currentCommentReplyButton ?? ""}
+				{%- endif -%}
+				</small>
+			</p>
+			<div>
+				{%- if comment_replies_enabled -%}
+				${replyToHtml ?? ""}
+				{%- endif -%}
+				<p>${validator.escape(comment?.text?.toString()).replace(new RegExp('\r?\n','g'), '<br />')}</p>
+			</div>
+		`.trim();
+		if (isPrepend) {
+      if (replyId) 
+        replyComments.push({replyId: `${replyId}`, item: newItem})
+      else
+			  document.getElementById("comment-container").prepend(newItem);
+		} else {
+      if (replyId) 
+        replyComments.push({replyId: `${replyId}`, item: newItem})
+      else
+			  document.getElementById("comment-container").append(newItem);
+		}
+		fadeIn(newItem);
+		visibleComments.push(element);
+
+		hide("no-comments");
+		show("num-comments-displayed");
+	};
+
+	function reloadComments() {
+		fetch(`{{ site.google_forms_comments.google_app_script }}?url=${thisPageUrl}`)
+		.then(response => response.json())
+		.then(response => {
+			var error = response?.error || null;
+			if (error != null) {
+				console.error(error);
+				setText("comment-submit-error", error);
+				show("comment-submit-error");
+			} else {
+				setText("comment-submit-error", '');
+				hide("comment-submit-error");
+				displayComments(response);
+			}
+		});
+		
+	};
+
+  const encodeFormData = (data) => {
+	    return Object.keys(data)
+	        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
+	        .join('&');
+	};
+
+	function checkRecaptcha() {
+		disablePostCommentButton();
+        grecaptcha.ready(function() {
+        	var pageAction = "comment_submit_{{ page.title }}".replace(/[^A-Za-z/_]/g, "");
+        	grecaptcha.execute('{{ site.google_forms_comments.recaptcha_site_key }}', { action: pageAction }).then(function(token) {
+        		postComment(token);
+        	});
+        });
+        return false;
+    };
+
+	function getCommentContent() {
+		var comment = getValue("comment-comment")?.toString();
+
+		var extraCommentInfo = {};
+
+		{%- if comment_replies_enabled -%}
+		var replyToCommentId = document?.getElementById("reply-to-comment-id")?.text;
+		if (replyToCommentId != null && replyToCommentId != "") {
+			extraCommentInfo.replyToCommentId = replyToCommentId;
+		}
+		{%- endif -%}
+
+		if (Object.keys(extraCommentInfo).length !== 0) {
+			comment = EXTRA_INFO_START + JSON.stringify(extraCommentInfo) + EXTRA_INFO_END + comment;
+		}
+
+		return comment;
+	};
+
+	function postComment(recaptchaToken) {
+		disablePostCommentButton();
+		var username = getValue("comment-name") || "anonymous";
+		var comment = getCommentContent();
+
+		fetch(`{{ site.google_forms_comments.google_app_script }}`, {
+		  method: 'POST',
+		  mode: 'cors',
+		  redirect: "follow",
+		  headers: {
+		    "Content-Type": "text/plain;charset=utf-8"
+		  },
+		  body: JSON.stringify({
+		  	url : thisPageUrl?.toString(),
+		  	name : username?.toString(),
+		  	comment : comment?.toString(),
+		  	recaptchaToken: (recaptchaToken || null)
+		  })
+		}).then(response => response.json())
+		.then(response => {
+			var error = response?.error || null;
+			if (error != null) {
+				console.error(error);
+				setText("comment-submit-error", error);
+				show("comment-submit-error");
+			} else {
+				setValue("comment-name", '');
+				setValue("comment-comment", '');
+				setText("comment-submit-error", '');
+				hide("comment-submit-error");
+				displayComments(response);
+				{%- if comment_replies_enabled -%}
+				clearCommentReplyItem();
+				{%- endif -%}
+			}
+		})
+		.catch(error => {console.log(error);})
+		.finally(() => { enablePostCommentButton(); });
+
+		return false;
+	};
+
+	{%- unless lazy_load_enabled -%}
+		initialCommentLoad();
+	{%- endunless -%}
+</script>
+
+<h4 class="post-subtitle">Comments</h4>
+<div id="load-comments" class="comments">
+	<button id="load-comment-button" class="comment-button" onclick="initialCommentLoad()">Load Comments</button>
+</div>
+<div id="comments-and-input">
+	<div id="comment-section" class="comments">
+		<p id="num-comments-displayed"></p>
+		<button id="load-more-comments" class="comment-button" onclick="loadMoreComments(true)" type="button">Load Older Comments</button>
+		<div id="no-comments" class="comment-info-text">
+			<p>There are currently no comments on this article, be the first to add one below</p>
+		</div>
+		<div id="comment-container"></div>
+	</div>
+	<h4 class="post-subtitle">Add a Comment</h4>
+	<div class="comments">
+		<div class="comment-info-text">
+			<p>Note that comments are moderated, it may appear after sometime if found appropriate.</p>
+			<p id="comment-submit-error"></p>
+		</div>	
+		<div class="comments-form">
+			<form onsubmit="return checkRecaptcha()" id="comment-form" autocomplete="off">
+				<ul>
+					<li>
+						<input id="comment-name" name="username" type="text" placeholder="Name" value="">
+						{%- if comment_replies_enabled -%}
+						<p id="comment-reply-info"></p>
+						{%- endif -%}
+					</li>
+					<li><textarea id="comment-comment" name="comment" placeholder="Comment*" required=""></textarea></li>
+					<li><button id="comment-submit" type="submit" class="comment-button">Post</button></li>
+				</ul>
+				<p id="comment-recaptcha-disclaimer">This site is protected by reCAPTCHA and the Google
+				    <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+				    <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+        </p>
+      </form>
+		</div>
+	</div>
+</div>
+<style>
+@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro");
+.comment-root-item {
+  position: relative;
+	padding: 1em 1em;
+	background: white;
+	font-family: "Source Sans Pro", sans-serif;
+	width: 95%;
+	margin: 1em auto;
+	box-shadow: 0px 0px 2px 2px rgba(0, 0, 0, 0.1);
+	border-radius: 8px;
+
+}
+.comment-item {
+  word-wrap: break-word;
+  margin-top: 1em;
+	font-family: "Source Sans Pro", sans-serif;
+	background: white;
+	margin-left: 2em;
+  -webkit-box-shadow: inset 0px 3px 3px -3px rgba(50, 50, 50, 0.75);
+  -moz-box-shadow:    inset 0px 3px 3px -3px rgba(50, 50, 50, 0.75);
+  box-shadow:         inset 0px 3px 3px -3px rgba(50, 50, 50, 0.75);
+}
+
+.comment-root-item:after,
+.comment-item:after {
+	content: "";
+	position: relative;
+	display: block;
+	clear: both;
+}
+
+.comment-root-item p,
+.comment-item p {
+	line-height: 1.6;
+  margin-bottom: 0.25rem;
+}
+
+.comment-root-item small,
+.comment-item small {
+	padding-left: 0.7em;
+	color: #999;
+	font-size: 0.8em;
+}
+
+.commenter-name {
+	color: #367588;
+	text-decoration: none;
+	font-size: 1em;
+	font-weight: 700;
+  margin-bottom: 0.5rem !important;
+}
+
+.commenter-name strong {
+	color: #e91e63;
+	text-decoration: none;
+	font-size: 1em;
+	font-weight: 700;
+}
+
+.commenter-name div p {
+  margin-bottom: 0.5rem;
+}
+
+{%- if comment_replies_enabled -%}
+.comment-reply-button {
+	float: right;
+	cursor: pointer;
+}
+
+.comment-reply-button img {
+	display: inline;
+	vertical-align: middle;
+	width: 1.2em;
+	height: 1.2em;
+	margin: 0;
+	content:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 0 24 24' width='24px' fill='%23999999'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E");
+}
+
+.comment-reply-button:hover {
+	color: #e91e63;
+}
+
+.comment-reply-button:hover img {
+	content:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='24px' viewBox='0 0 24 24' width='24px' fill='%23e91e63'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E");
+}
+
+.comemnt-reply-id {
+	color: #e91e63;
+	font-size: .9em;
+	cursor: pointer;
+}
+
+#comment-reply-info {
+	float: right;
+	font-size: .9em;
+	color: #e91e63;
+	cursor: pointer;
+}
+
+#comment-reply-info small {
+	vertical-align: middle;
+}
+
+.comment-reply-clear {
+	color: #e91e63;
+	font-size: 1.1em;
+	cursor: pointer;
+}
+{%- endif -%}
+
+#comment-reply-info p {
+	margin: 0;
+}
+
+.comments-form {
+	margin-left: 1em;
+	margin-right: 1em;
+	width: 95%;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+.comments-form ul {
+	list-style: none;
+	margin-left: -40px;
+}
+
+.comments-form ul li {
+	margin-bottom: 15px;
+}
+
+.comments {
+	align-items: center;
+	border-top: 0.5px solid #e5e5e5;
+	padding-top: 1rem;
+	position: relative;
+}
+
+.comments p {
+  font-size: 0.9em;
+}
+
+.comment-button {
+	border: 0;
+	border-radius: 8px;
+	background: #9ccc65;
+	color: #fff;
+	font-family: "Source Sans Pro", sans-serif;
+	font-weight: bold;
+	font-size: 0.9em;
+	text-transform: uppercase;
+	margin-bottom: 20px;
+	outline-style: none;
+	padding: 10px 20px;
+	width: auto;
+	min-width: 25%;
+}
+
+#comment-submit {
+	width: auto;
+	min-width: 25%;
+	position: relative;
+}
+
+.comment-button:disabled::after,
+.comment-button[disabled]::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 4px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    -webkit-animation: button-loading-spinner 1s ease infinite;
+    animation: button-loading-spinner 1s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+@-webkit-keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+#load-more-comments {
+	width: auto;
+}
+
+#load-more-comments,
+#num-comments-displayed {
+	display: none;
+}
+
+#comment-name,
+#comment-comment {
+	width: 100%;
+	padding: 10px;
+	border: 0;
+	border-radius: 8px;
+	background: #f7f7f7;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-name::-webkit-input-placeholder,
+#comment-comment::-webkit-input-placeholder {
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-name::-moz-placeholder,
+#comment-comment::-moz-placeholder {
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-name:-ms-input-placeholder,
+#comment-comment:-ms-input-placeholder {
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-name::-ms-input-placeholder,
+#comment-comment::-ms-input-placeholder {
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-name::placeholder,
+#comment-comment::placeholder {
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-name:focus,
+#comment-comment:focus {
+	background: #fff;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-comment {
+	width: 100%;
+	height: 80px;
+	resize: vertical;
+	min-height: 80px;
+}
+
+.grecaptcha-badge {
+	visibility: hidden;
+}
+
+#comment-recaptcha-disclaimer {
+	text-align: justify;
+    text-align-last: center;
+    font-size: .7em;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#comment-submit-error {
+	color: red;
+	display: none;
+}
+
+.comment-info-text {
+	letter-spacing: 0.5px;
+  text-align: left;
+}
+
+.comment-info-text p {
+	margin: 0 0 1rem;
+	/* text-align: justify; */
+  text-align-last: left;
+  font-size: .7em;
+}
+
+#comment-container {
+	width: 100%;
+}
+
+.post-subtitle {
+  margin-top: 1.25rem;
+}
+
+#comment-section, #load-comments {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+{%- if lazy_load_enabled -%}
+#comments-and-input {
+	display: none;
+}
+{%- else -%}
+#load-comments {
+	display: none;
+}
+{%- endif -%}
+</style>

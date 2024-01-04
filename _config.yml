@@ -1,0 +1,134 @@
+# Welcome to Jekyll!
+#
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely edit after that. If you find
+# yourself editing this file very often, consider using Jekyll's data files
+# feature for the data you need to update frequently.
+#
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
+
+# Site settings
+# These are used to personalize your new site. If you look in the HTML files,
+# you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
+# You can create any custom variable you would like, and they will be accessible
+# in the templates via {{ site.myvariable }}.
+# theme: jekyll-theme-so-simple
+remote_theme: "mmistakes/so-simple-theme@3.2.0"
+skin: "/assets/css/skins/default.css"
+locale: en-US
+encoding: utf-8
+title: "Data Terms & Concepts"
+description: "Datapedia: Your Ultimate Hub for Consolidated Data Terms and Concepts"
+# baseurl: # the subpath of your site, e.g. "/blog"
+# baseurl: /influencers
+url: "https://influencers.techfunhouse.com"
+logo: "/assets/images/Influencers.png"
+linkedin_title: "LinkedIn"
+linkedin_logo: "/assets/images/LinkedIn.png"
+twitter_title: "Twitter"
+twitter_logo: "/assets/images/Twitter.png"
+techfunhouse_title: "TechFunHouse"
+techfunhouse_logo: "/assets/images/TechFunHouse.png"
+date_format: "%B %-d, %Y"
+read_time: false
+words_per_minute: 265
+mathjax:
+  enable: # MathJax equations, e.g. true, false (default)
+  combo:  # "tex-svg" (default), "tex-mml-chtml", etc.: docs.mathjax.org/en/latest/web/components/combined.html
+  tags:  # "none", "ams" (default), "all"
+google_fonts:
+  - name: "Poppins"
+    weights: "100,100i,200,200i,300,300i,400,400i,500,500i,600,600i,700,700i,800,800i,900,900i"
+  - name: "Kreon"
+    weights: "300,400,500,600,700"
+  - name: "DM Mono"
+    weights: "300,300i,400,400i,500,500i"
+
+twitter:
+  username: giri_venkatesan
+
+# Liquid
+liquid:
+  error_mode: strict
+
+# Build settings
+markdown: kramdown
+feed:
+  path: atom.xml
+
+# Pagination - https://jekyllrb.com/docs/pagination/
+paginate: 10
+paginate_path: /page:num/
+
+# Search
+search_full_content: true
+
+# Taxonomy pages
+category_archive_path: "/categories#"
+tag_archive_path: "/tags#"
+
+# Exclude from processing.
+# The following items will not be processed, by default. Create a custom list
+# to override the default setting.
+exclude:
+  - work/
+  - node_modules/
+#   - Gemfile
+#   - Gemfile.lock
+#   - node_modules
+#   - vendor/bundle/
+#   - vendor/cache/
+#   - vendor/gems/
+#   - vendor/ruby/
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-feed
+  - jekyll-paginate
+  - jekyll-redirect-from
+  - jekyll-remote-theme
+
+# Front Matter Defaults
+defaults:
+  # Posts defaults
+  - scope:
+      path: "_posts"
+      type: posts
+    values:
+      layout: post
+      share: true
+
+# Site Author
+author:
+  name: Giri Venkatesan
+  picture: /assets/images/AuthorLogo.png
+  links:
+    - title: Twitter
+      url: https://twitter.com/JordanLeviLV
+      icon: fab fa-twitter
+    - title: Instagram
+      url: https://www.instagram.com/jordanlevilv/
+      icon: fab fa-instagram
+    - title: Facebook
+      url: https://www.facebook.com/JordanLeviLV
+      icon: fab fa-facebook-f
+    - title: Snapchat
+      url: https://www.snapchat.com/add/swaminetero
+      icon: fab fa-snapchat-ghost
+    - title: Main Links Page
+      url: https://jordanlevi.link/
+      icon: fas fa-link
+
+# Footer Links
+footer_links:
+    - title: LinkedIn
+      url: https://linkedin.com/in/girivenkatesan
+    - title: Twitter
+      url: https://twitter.com/giri_venkatesan
+    - title: TechFunHouse
+      url: https://techfunhouse.com
+    
+# Copyright
+copyright: <p xmlns:cc="http://creativecommons.org/ns#" >All works are marked with <a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC0 1.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"></a> unless stated otherwise.</p>

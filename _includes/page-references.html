@@ -1,0 +1,31 @@
+{% if page.references.size > 0 %}
+  <h3 class="page-taxonomies-title">{{ site.data.text[site.locale].references | default: 'references' }}</h3>
+  {% assign references = page.references | sort %}
+  <ul class="entries-grid" style="grid-gap: 0em; padding-inline-start: 0px; margin-top: 10px;">
+    {%- for reference in references -%}
+    {% if  site.data.metadata[reference] %}
+    <li class="page-taxonomy">
+      <div class="div-link-preview" style="height: 122px;">
+        <div class="div-link-preview-col div-link-preview-col-l" style="height: 122px;">
+          <img class="div-link-preview-img" src="{{site.data.metadata[reference].image}}">
+        </div>
+        <div class="div-link-preview-col div-link-preview-col-r" style="height: 122px;">
+          <div style="display: block; height: 100%; padding-left: 10px;">
+            <div class="div-link-preview-title"><a target="_blank" href="{{site.data.metadata[reference].url}}">{{site.data.metadata[reference].title}}</a></div>
+            <div class="div-link-preview-content">{{site.data.metadata[reference].description}}</div>
+            {% if site.data.metadata[reference].site_name %}
+            <div class="div-link-preview-domain">
+              <span style="font-size: 80%; margin-left: 20px;">🔗</span>{{site.data.metadata[reference].site_name}}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </li>
+    {% endif %}
+    {%- endfor- %}
+  </ul>
+{% endif %}
+
+
+
