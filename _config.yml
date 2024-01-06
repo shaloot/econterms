@@ -27,6 +27,8 @@ logo: "/assets/images/Influencers.png"
 linkedin_title: "LinkedIn"
 linkedin_logo: "/assets/images/LinkedIn.png"
 twitter_title: "Twitter"
+gitsource_logo: "/assets/images/GitHub.png"
+gitsource_title: "GitHub"
 twitter_logo: "/assets/images/Twitter.png"
 techfunhouse_title: "TechFunHouse"
 techfunhouse_logo: "/assets/images/TechFunHouse.png"
@@ -128,12 +130,14 @@ author:
 
 # Footer Links
 footer_links:
-    - title: LinkedIn
-      url: https://linkedin.com/in/girivenkatesan
-    - title: Twitter
-      url: https://twitter.com/giri_venkatesan
-    - title: TechFunHouse
-      url: https://techfunhouse.com
-    
+  - title: LinkedIn
+    url: https://linkedin.com/in/girivenkatesan
+  - title: Twitter
+    url: https://twitter.com/giri_venkatesan
+  - title: GitSource
+    url: https://github.com/techfunhouse/tfh.dataterms
+  - title: TechFunHouse
+    url: https://techfunhouse.com
+  
 # Copyright
 copyright: <p xmlns:cc="http://creativecommons.org/ns#" >All works are marked with <a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC0 1.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"></a> unless stated otherwise.</p>
