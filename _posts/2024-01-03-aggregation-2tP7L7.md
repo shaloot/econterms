@@ -5,7 +5,7 @@ about: "Data aggregation is any process whereby data is gathered and expressed i
 categories:
 tags:
 references:
-  - https:://en.wikipedia.org/wiki/Data_aggregation
+  - https://en.wikipedia.org/wiki/Data_aggregation
   - https://www.techtarget.com/searchdatamanagement/definition/data-aggregation
   - https://www.ibm.com/docs/en/tnpm/1.4.5?topic=introduction-data-aggregation
   - https://coresignal.com/blog/data-aggregation

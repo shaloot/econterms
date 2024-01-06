@@ -18,6 +18,8 @@ layout: default
       </header>
       <div class="page-content">
         {% include page-pagination.html %}
+        {% include page-contributor.html %}
+
         <p class="e-about">
           {{ page.about | split: '&colon;' | join: ':' | split: '&hash;' | join: '#' | split: '&newline;' | join: '<br />' | split: '<br />' | join: '<br /><br />' | normalize_whitespace | markdownify}}
         </p>
@@ -25,10 +27,7 @@ layout: default
         <hr class="solid">
 
         <div class="e-content">
-          {{ content }}
-
           {% include page-references.html %}
-
         </div>
 
         {% include page-pagination.html %}

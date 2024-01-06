@@ -1,4 +1,5 @@
-{% if page.author %}
+{% if page.author != 'Giri Venkatesan' %}
+  <hr class="solid">
   <h3 class="page-taxonomies-title">{{ site.data.text[site.locale].contributor | default: 'Contributor' }}</h3>
   <ul class="page-taxonomies">
     <li class="page-taxonomy">
@@ -9,4 +10,5 @@
       {% endif %}
     </li>
   </ul>
+  <hr class="solid">
 {% endif %}

@@ -12,7 +12,8 @@ references:
   - https://www.ibm.com/topics/data-management
   - https://www.informatica.com/in/resources/articles/what-is-data-management.html
 date: 2024-01-03T16:39:04.899Z
-author: Giri Venkatesan
+author: Giri Venkatesan1
+authorurl: https://www.techtarget.com/searchdatamanagement/definition/data-management
 published: true
 share: true
 permalink: management-Zo9y5X

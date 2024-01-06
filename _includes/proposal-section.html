@@ -1,0 +1,545 @@
+{%- assign recaptcha_enabled = true -%}
+
+<link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
+<script>
+	function setText(elementId, textContent) {
+		document.getElementById(elementId).textContent = textContent;
+	};
+
+	function show(elementId) {
+		document.getElementById(elementId).style.display = 'inline';
+	};
+
+	function hide(elementId) {
+		document.getElementById(elementId).style.display = 'none';
+	};
+
+	function getValue(elementId) {
+		return document.getElementById(elementId).value;
+	};
+
+	function setValue(elementId, value) {
+		return document.getElementById(elementId).value = value;
+	};
+
+	function fadeIn(element) {
+		var duration = 400;
+		element.style.opacity = 0;
+		let opacity = 0;
+		const timer = setInterval(function() {
+		  opacity += 50 / duration;
+		  if (opacity >= 1) {
+		    clearInterval(timer);
+		    opacity = 1;
+		  }
+		  element.style.opacity = opacity;
+		}, 50);
+	};
+
+	function disableButtonWithLoader(elementId) {
+		var buttonToDisable = document.getElementById(elementId);
+		if (buttonToDisable == null) {
+			return;
+		}
+		buttonToDisable.disabled = true;
+		setText(elementId, "\xa0");
+	}
+
+	function disablePostProposalButton() {
+		disableButtonWithLoader("proposal-submit");
+	};
+
+	function enablePostProposalButton() {
+		var postProposalButton = document.getElementById("proposal-submit");
+		postProposalButton.disabled = false;
+		setText("proposal-submit", "Post");
+	};
+
+  var loadRecaptcha = document.createElement("script");
+  loadRecaptcha.src = "https://www.google.com/recaptcha/api.js?render={{ site.google_forms_proposals.recaptcha_site_key }}";
+  document.head.appendChild(loadRecaptcha);
+
+	const EXTRA_INFO_START = "chunkedProposalInfoStart";
+	const EXTRA_INFO_END = "chunkedProposalInfoEnd";
+
+	function formatDate(stringDate) {
+		var date = new Date(stringDate);
+		var dateOptions = { year: 'numeric', month: 'long', day: 'numeric'};
+		var timeOptions = { hour: 'numeric', minute: 'numeric' };
+		return `${date.toLocaleDateString("en-us", dateOptions)} at ${date.toLocaleTimeString("en-us", timeOptions)}`;
+	};
+
+  function smoothScrollTo(element) {
+		element.scrollIntoView({
+		  behavior: "smooth",
+		  block: "start",
+		  inline: "nearest"
+		});
+	};
+
+	const encodeFormData = (data) => {
+    return Object.keys(data)
+        .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
+        .join('&');
+	};
+
+	function checkRecaptcha() {
+    grecaptcha.ready(function() {
+      var pageAction = "comment_submit_{{ page.title }}".replace(/[^A-Za-z/_]/g, "");
+      grecaptcha.execute('{{ site.google_forms_proposals.recaptcha_site_key }}', { action: pageAction }).then(function(token) {
+        postProposal(token);
+      });
+    });
+    return false;
+  };
+
+	function postProposal(recaptchaToken) {
+		disablePostProposalButton();
+    
+		var term = getValue("proposal-term") || ""
+		var description = getValue("proposal-description") || "";
+		var references = getValue("proposal-references") | "";
+		var yourname = getValue("proposal-yourname") || "";
+		var yourlinkedin = getValue("proposal-yourlinkedin") || "";
+
+    if (!term) {
+      setText("proposal-submit-error", "A term/concept must be specified");
+      show("proposal-submit-error");
+      hide("proposal-submit-info");
+      smoothScrollTo(document.getElementById('proposal-submit-error'));
+      enablePostProposalButton();
+      return;
+    }
+
+		fetch(`{{ site.google_forms_proposals.google_app_script }}`, {
+		  method: 'POST',
+		  mode: 'cors',
+		  redirect: "follow",
+		  headers: {
+		    "Content-Type": "text/plain;charset=utf-8"
+		  },
+		  body: JSON.stringify({
+        term,
+        description,
+        references,
+        yourname,
+        yourlinkedin,
+		  	recaptchaToken: (recaptchaToken || null)
+		  })
+		})
+    .then(response => response)
+    .then(response => response.json())
+		.then(response => {
+			var error = response?.error || null;
+			if (error != null) {
+				console.error(error);
+				setText("proposal-submit-error", error);
+        smoothScrollTo(document.getElementById('proposal-submit-error'));
+        hide("proposal-submit-info");
+				show("proposal-submit-error");
+			} else {
+        setValue("proposal-term", '');
+        setValue("proposal-description", '');
+        setValue("proposal-references", '');
+        setValue("proposal-yourname", '');
+        setValue("proposal-yourlinkedin", '');
+				show("proposal-submit-info");
+        hide("proposal-submit-error");
+        smoothScrollTo(document.getElementById('proposal-submit-info'));
+				setText("proposal-submit-info", 'Successfully submitted, Thank you!');
+			}
+		})
+		.catch(error => {
+      console.log(error);
+      smoothScrollTo(document.getElementById('proposal-submit-error'));
+      setText("proposal-submit-error", error);
+      hide("proposal-submit-info");
+      show("proposal-submit-error");
+    })
+		.finally(() => { enablePostProposalButton(); });
+
+		return false;
+	};
+
+  async function loadGlobalData() {
+    await fetch('{{ site.google_forms_proposals.google_app_script }}?count=true')
+      .then(response => response.json())
+      .then(response => {
+        console.log(response);
+        var error = response?.error || null;
+        if (error != null) {
+          document.getElementById('pending-proposals').innerText = 'N/A';
+        } else {
+          document.getElementById('pending-proposals').innerText = '[ ' + (response && response.count ? response.count : 0) + ' ]';
+        }
+      });
+  }
+
+  loadGlobalData();
+</script>
+
+<h4 class="post-update-title">Proposals under review: <span id="pending-proposals"></span></h4>
+<div id="proposals-and-input">
+  <h4 class="post-subtitle">I am proposing</h4>
+	<div class="comments">
+    <div class="proposals-form">
+			<form onsubmit="return checkRecaptcha()" id="proposal-form" autocomplete="off">
+      <div class="proposal-info-text" id="proposal-info-text">
+        <p id="proposal-submit-error"></p>
+        <p id="proposal-submit-info"></p>
+      </div>	
+      <ul>
+        <li class="proposal-box">
+          <input id="proposal-term" name="name" type="text" placeholder="Term/Concept*" value="">
+          <dd class="description">I want to propose...</dd>
+        </li>
+        <li class="proposal-box">
+          <textarea id="proposal-description" name="description" placeholder="Description" rows="5" required=""></textarea>
+          <dd class="description">Description</dd>
+        </li>
+        <li class="proposal-box">
+          <textarea id="proposal-references" name="references" placeholder="References" rows="5" required=""></textarea>
+          <dd class="description">References</dd>
+        </li>
+        <div id="proposal-group" class="proposal-group flex-2-cols">
+          <li class="proposal-box">
+            <input id="proposal-yourname" name="yourname" type="text" placeholder="Your Name" value="">
+            <dd class="description">Your Name</dd>
+          </li>
+          <li class="proposal-box">
+            <input id="proposal-yourlinkedin" name="yourlinkedin" type="text" placeholder="Your LinkedIn Profile URL" value="">
+            <dd class="description">Your LinkedIn profile URL</dd>
+          </li>
+          <dd class="proposal-group-description" id="proposal-group-description">If shared, you will be recognized as the contributor.</dd>
+        </div>
+        <li><button id="proposal-submit" type="submit" class="proposal-button">Submit</button></li>
+      </ul>
+      <p id="proposal-recaptcha-disclaimer">This site is protected by reCAPTCHA and the Google
+          <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+          <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+      </p>
+      </form>
+		</div>
+	</div>
+</div>
+
+<style>
+@import url("https://fonts.googleapis.com/css?family=Source+Sans+Pro");
+.proposal-item {
+	position: relative;
+	padding: 0.5em 0.5em;
+	background: white;
+	font-family: "Source Sans Pro", sans-serif;
+	width: 95%;
+	margin: 0.5em auto;
+	box-shadow: 0px 0px 2px 2px rgba(0, 0, 0, 0.1);
+	border-radius: 8px;
+}
+
+.proposal-item:after {
+	content: "";
+	position: relative;
+	display: block;
+	clear: both;
+}
+
+.proposal-item p {
+	line-height: 1.6;
+  margin-bottom: 0.25rem;
+}
+
+.proposal-item small {
+	padding-left: 0.7em;
+	color: #999;
+	font-size: 0.8em;
+}
+
+.commenter-name {
+	color: #367588;
+	text-decoration: none;
+	font-size: 1em;
+	font-weight: 700;
+  margin-bottom: 0.5rem !important;
+}
+
+.commenter-name strong {
+	color: #e91e63;
+	text-decoration: none;
+	font-size: 1em;
+	font-weight: 700;
+}
+
+.commenter-name div p {
+  margin-bottom: 0.5rem;
+}
+
+#proposal-reply-info p {
+	margin: 0;
+}
+
+.proposals-form {
+	margin-left: 1em;
+	margin-right: 1em;
+	width: 95%;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+.proposals-form ul {
+	list-style: none;
+	margin-left: -40px;
+}
+
+.proposals-form ul li {
+	margin-bottom: 5px;
+}
+
+.comments {
+	align-items: center;
+	border-top: 0.5px solid #e5e5e5;
+	padding-top: 1rem;
+	position: relative;
+}
+
+.proposal-button {
+	border: 0;
+	border-radius: 8px;
+	background: #9ccc65;
+	color: #fff;
+	font-family: "Source Sans Pro", sans-serif;
+	font-weight: bold;
+	font-size: 0.9em;
+	text-transform: uppercase;
+	margin-bottom: 20px;
+	outline-style: none;
+	padding: 10px 20px;
+	width: auto;
+	min-width: 25%;
+}
+
+#proposal-submit {
+	width: auto;
+	min-width: 25%;
+	position: relative;
+}
+
+.proposal-button:disabled::after,
+.proposal-button[disabled]::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 4px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    -webkit-animation: button-loading-spinner 1s ease infinite;
+    animation: button-loading-spinner 1s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+@-webkit-keyframes button-loading-spinner {
+    from {
+        transform: rotate(0turn);
+    }
+
+    to {
+        transform: rotate(1turn);
+    }
+}
+
+#load-more-comments {
+	width: auto;
+}
+
+#load-more-comments,
+#num-proposals-displayed {
+	display: none;
+}
+
+.proposal-group {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.proposal-error-group {
+  color: red;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.proposal-box {
+  /* padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 10px; */
+}
+
+.tagify,
+#proposal-references,
+#proposal-term,
+#proposal-description,
+#proposal-yourname,
+#proposal-yourlinkedin {
+	width: 100%;
+	padding: 10px;
+	border: 0;
+	border-radius: 8px;
+	background: #f7f7f7;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-references::-webkit-input-placeholder,
+#proposal-term::-webkit-input-placeholder,
+#proposal-description::-webkit-input-placeholder,
+#proposal-yourname::-webkit-input-placeholder,
+#proposal-yourlinkedin::-webkit-input-placeholder {
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-references::-moz-placeholder,
+#proposal-term::-moz-placeholder,
+#proposal-description::-moz-placeholder,
+#proposal-yourname::-moz-placeholder,
+#proposal-yourlinkedin::-moz-placeholder {  
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-references:-ms-input-placeholder,
+#proposal-term:-ms-input-placeholder,
+#proposal-description:-ms-input-placeholder,
+#proposal-yourname:-ms-input-placeholder,
+#proposal-yourlinkedin:-ms-input-placeholder {  
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-references::-ms-input-placeholder,
+#proposal-term::-ms-input-placeholder,
+#proposal-description::-ms-input-placeholder,
+#proposal-yourname::-ms-input-placeholder,
+#proposal-yourlinkedin::-ms-input-placeholder {  
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-references::placeholder,
+#proposal-term::placeholder,
+#proposal-description::placeholder,
+#proposal-yourname::placeholder,
+#proposal-yourlinkedin::placeholder {  
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-references:focus,
+#proposal-term:focus,
+#proposal-description:focus,
+#proposal-yourname:focus,
+#proposal-yourlinkedin:focus {  
+	background: #fff;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+.description,
+.proposal-group-description {
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 500;
+  padding: 5px;
+  margin-bottom: 5px;
+}
+
+.proposal-group-description {
+  margin-bottom: 15px;
+}
+
+.grecaptcha-badge {
+	visibility: hidden;
+}
+
+#proposal-recaptcha-disclaimer {
+	text-align: justify;
+    text-align-last: center;
+    font-size: .7em;
+	font-family: "Source Sans Pro", sans-serif;
+}
+
+#proposal-submit-error {
+	color: red;
+	display: none;
+}
+
+#proposal-submit-info {
+	color: #2a8d7b;
+	display: none;
+}
+
+.proposal-info-text {
+	letter-spacing: 0.5px;
+  text-align: left;
+  font-size: 1.5em;
+}
+
+.proposal-info-text p {
+	margin: 0 0 1rem;
+	/* text-align: justify; */
+  text-align-last: left;
+  font-size: 0.7em;
+}
+
+#proposal-container {
+	width: 100%;
+}
+
+.post-subtitle {
+  margin-top: 1.25rem;
+}
+
+.post-update-title {
+  font-size: 0.75rem;
+}
+
+#proposal-section, #load-comments {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.flex-2-cols {
+  display: flex;
+  flex-wrap: wrap;
+
+  > * {
+    width: 48%;
+    margin: 5px;
+    box-sizing: border-box;
+  }
+}
+
+.flex-5-cols {
+  @include flex-grid-items(5)
+}
+
+.flex-9-cols {
+  @include flex-grid-items(9)
+}
+/* .tagify{    
+  width: 100%;
+  max-width: 700px;
+} */
+</style>

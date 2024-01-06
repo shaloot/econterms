@@ -45,6 +45,11 @@ google_fonts:
   - name: "DM Mono"
     weights: "300,300i,400,400i,500,500i"
 
+google_analytics: "G-GQNYL2ZJV4"
+google_forms_proposals:
+  google_app_script: "https://script.google.com/macros/s/AKfycbz3khPb85wKzlR83Yn756Qlx6dBzXVRc5rK6yrpBPsERX9tY2tE--1a5AfJqUsSwwAgbA/exec"
+  recaptcha_site_key: "6LdshVsnAAAAAC0TFUriXZ84RxD1L0hmN84XaXhI"
+
 twitter:
   username: giri_venkatesan
 

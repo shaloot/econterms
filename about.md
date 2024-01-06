@@ -12,4 +12,4 @@ In a world inundated with information, comprehending the significance of data is
 
 I humbly acknowledge that I am not an expert navigating the vast data ocean. While I bring experience from some waves I've surfed, I am also learning alongside you. Each term is a collaborative effort, with due credit given to sources as references. Consider this not just a curated list, but a guiding compass through the ever-expanding sea of data knowledge.
 
-<hr class="hr-text" data-content="Dancing with Data: Where Information and Insight Tango in Harmony">
+<hr class="hr-text" data-content="DataTerms: Where Terms and Concepts Tango in Harmony">
