@@ -4,8 +4,6 @@
   {%- if site.footer_links -%}
     <br/><br/>
     <div class="social-icons">
-      <script>console.log('In includes')</script>
-      <script>console.log({{site.footer_links | jsonify}})</script>
       {%- for footer_link in site.footer_links -%}
         {%- if footer_link.title == 'LinkedIn' %}
           <a class="social-icon" href="{{ footer_link.url }}" target="_blank">

@@ -87,7 +87,7 @@
 
 	function checkRecaptcha() {
     grecaptcha.ready(function() {
-      var pageAction = "proposal_submit_{{ page.title }}".replace(/[^A-Za-z/_]/g, "");
+      var pageAction = "comment_submit_{{ page.title }}".replace(/[^A-Za-z/_]/g, "");
       grecaptcha.execute('{{ site.google_forms_proposals.recaptcha_site_key }}', { action: pageAction }).then(function(token) {
         postProposal(token);
       });
