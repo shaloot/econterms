@@ -49,7 +49,7 @@ google_fonts:
 
 google_analytics: "G-GQNYL2ZJV4"
 google_forms_proposals:
-  google_app_script: "https://script.google.com/macros/s/AKfycbxO9ddEw3pU4-RDx-YS4lHSoVrBjBPtYYoSP5dUggaR-iosUHn9n7qjjqXWDj7_CAdj/exec"
+  google_app_script: "https://script.google.com/macros/s/AKfycbxPZB6BPj5VarWxXKBrQSgAXbuRcqj3YH2jPryPbjcrmOAejOGFXTFIeuLOLPxHON1K/exec"
   recaptcha_site_key: "6LdshVsnAAAAAC0TFUriXZ84RxD1L0hmN84XaXhI"
 twitter:
   username: giri_venkatesan
