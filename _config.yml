@@ -49,9 +49,8 @@ google_fonts:
 
 google_analytics: "G-GQNYL2ZJV4"
 google_forms_proposals:
-  google_app_script: "https://script.google.com/macros/s/AKfycbz3khPb85wKzlR83Yn756Qlx6dBzXVRc5rK6yrpBPsERX9tY2tE--1a5AfJqUsSwwAgbA/exec"
-  recaptcha_site_key: "6LdshVsnAAAAAC0TFUriXZ84RxD1L0hmN84XaXhI"
-
+  google_app_script: "https://script.google.com/macros/s/AKfycbxyr7Td3vq3EOcfYPvE29NXnvTCVTJtFKwHoNtN6aTewKUQ1S_cLuAyo9N1dEXSrrOZ/exec"
+  recaptcha_site_key: "6Ld9wEgpAAAAAL1-sQdmIwHF4E7gC770mijtWIK7"
 twitter:
   username: giri_venkatesan
 
