@@ -87,7 +87,7 @@
 
 	function checkRecaptcha() {
     grecaptcha.ready(function() {
-      var pageAction = "comment_submit_{{ page.title }}".replace(/[^A-Za-z/_]/g, "");
+      var pageAction = "proposal_submit_{{ page.title }}".replace(/[^A-Za-z/_]/g, "");
       grecaptcha.execute('{{ site.google_forms_proposals.recaptcha_site_key }}', { action: pageAction }).then(function(token) {
         postProposal(token);
       });
@@ -100,7 +100,7 @@
     
 		var term = getValue("proposal-term") || ""
 		var description = getValue("proposal-description") || "";
-		var references = getValue("proposal-references") | "";
+		var references = getValue("proposal-references") || "";
 		var yourname = getValue("proposal-yourname") || "";
 		var yourlinkedin = getValue("proposal-yourlinkedin") || "";
 
