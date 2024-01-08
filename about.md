@@ -12,4 +12,6 @@ In a world inundated with information, comprehending the significance of data is
 
 I humbly acknowledge that I am not an expert navigating the vast data ocean. While I bring experience from some waves I've surfed, I am also learning alongside you. Each term is a collaborative effort, with due credit given to sources as references. Consider this not just a curated list, but a guiding compass through the ever-expanding sea of data knowledge.
 
+I will do my best to keep this site updated as I find more gems - but would really appreciate to share new terms/conceptsin the <a class="propose-ref-link" href="/propose">Propose</a> section. 
+
 <hr class="hr-text" data-content="DataTerms: Where Terms and Concepts Tango in Harmony">
