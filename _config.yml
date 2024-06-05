@@ -18,7 +18,7 @@ remote_theme: "mmistakes/so-simple-theme@3.2.0"
 skin: "/assets/css/skins/default.css"
 locale: en-US
 encoding: utf-8
-title: "Data Terms & Concepts"
+title: "Economics Terms - Beginner"
 description: "Datapedia: Your Ultimate Hub for Consolidated Data Terms and Concepts"
 # baseurl: # the subpath of your site, e.g. "/blog"
 # baseurl: /
